@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
+const nodemailer = require('nodemailer');
 
 // 1. Leer credenciales: en Vercel usa variable de entorno; en tu PC usa el archivo local
 const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
@@ -38,13 +39,37 @@ app.get('/qr/logistica', async (req, res) => {
   }
 });
 
-// 3. ENDPOINT DE ALERTAS
-app.post('/api/alerta', (req, res) => {
-  const { nombre_y_orden, calificacion_trato, rechazo } = req.body;
+// 3. ENDPOINT DE ALERTAS POR CORREO
+app.post('/api/alerta', async (req, res) => {
+  const { nombre_y_orden, calificacion_trato, comentario_trato, rechazo } = req.body;
 
   if (calificacion_trato === '¡Malo!' || rechazo === 'Si') {
-    const mensaje = `ALERTA LOGISTICA - Orden: ${nombre_y_orden} | Trato: ${calificacion_trato} | Rechazo: ${rechazo}`;
-    console.log('Despachando alerta:', mensaje);
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+
+      await transporter.sendMail({
+        from: `"Alertas Logística" <${process.env.EMAIL_USER}>`,
+        to: process.env.EMAIL_DESTINO,
+        subject: `🚨 ALERTA LOGÍSTICA - Orden: ${nombre_y_orden || 'Sin especificar'}`,
+        html: `
+          <h2>Se registró una incidencia en entrega</h2>
+          <p><strong>Nombre y Orden:</strong> ${nombre_y_orden || 'N/A'}</p>
+          <p><strong>Calificación del trato:</strong> ${calificacion_trato || 'N/A'}</p>
+          <p><strong>Comentario:</strong> ${comentario_trato || 'Sin comentarios'}</p>
+          <p><strong>¿Hubo rechazo?:</strong> ${rechazo || 'No'}</p>
+        `
+      });
+
+      console.log('Correo de alerta enviado.');
+    } catch (error) {
+      console.error('Error enviando correo:', error);
+    }
   }
 
   res.status(200).json({ ok: true });
