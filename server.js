@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json());
 
 // Reemplaza con tu URL real de Firebase Hosting
-const URL_ENCUESTA = 'https://tu-proyecto.web.app';
+const URL_ENCUESTA = 'https://pruebas-locales-2e352.web.app/';
 
 // 2. ENDPOINT DEL QR DINÁMICO
 app.get('/qr/logistica', async (req, res) => {
