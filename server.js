@@ -18,6 +18,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 const app = express();
+const cors = require('cors');
 app.use(cors());
 app.use(express.json());
 
